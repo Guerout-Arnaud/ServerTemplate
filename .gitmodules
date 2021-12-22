@@ -1,0 +1,6 @@
+[submodule "lib"]
+	path = lib
+	url = git@github.com:Guerout-Arnaud/C_Lib.git
+[submodule "dependancy/tpl"]
+	path = dependancy/tpl
+	url = git@github.com:troydhanson/tpl.git
