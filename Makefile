@@ -35,8 +35,10 @@ SRC_TEST	=	$(TEST_DIR)/ \
 MAIN	=	$(SRC_DIR)/main.c
 
 SRC	=	$(SRC_DIR)/server/server.c	\
-		$(SRC_DIR)/server/message.c	\
-		$(SRC_DIR)/server/connection.c	\
+		$(SRC_DIR)/server/signal/signal.c	\
+		$(SRC_DIR)/server/command/commands.c	\
+		$(SRC_DIR)/server/io/connection.c	\
+		$(SRC_DIR)/server/io/message.c	\
 		$(SRC_DIR)/game/game.c	\
 
 OBJ	=	$(SRC:.c=.o)
@@ -48,13 +50,13 @@ OBJ_TEST	=	$(SRC_TEST:.c=.o)
 ## ------- FLAGS --------##
 
 cflags.common	:=	-W -Wall -Wextra -Wno-unused-variable -Wno-unused-function -D_GNU_SOURCE -I./include/ -I./lib/include/
-cflags.debug	:=	-g3  -save-temps=obj
+cflags.debug	:=	-g3  -save-temps=obj -DDEBUG=true
 cflags.release	:= 
 cflags.tests	:=
 
-ldflags.common	:= -L./lib/output -llog -llinked_list -pthread
+ldflags.common	:=	-L./lib/output -llog -llinked_list -pthread
 ldflags.debug	:=
-ldflags.release	:=
+ldflags.release	:= 	-DDEBUG=false
 ldflags.tests	:=	-lcriterion -lgcov  --coverage
 
 CFLAGS	:=	${cflags.${BUILD}} ${cflags.common}
@@ -140,6 +142,12 @@ clean:
 	@echo -e $(MAGENTA) "\tRemoved: $(OBJ_MAIN)" $(DEFAULT)
 	@rm -rf $(OBJ_MAIN)
 	@$(foreach k, $(OBJ_TEST), $(shell rm -rf $(i)) echo -e $(MAGENTA) "\tRemoved:  $(k)" $(DEFAULT);)
+	@find -name "*.i" -delete && \
+        $(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
+        $(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
+	@find -name "*.s" -delete && \
+        $(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
+        $(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
 	@find -name "*.gcda" -delete
 	@find -name "*.gcno" -delete
 	@find -name "*.gcov" -delete && \

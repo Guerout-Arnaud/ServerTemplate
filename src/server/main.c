@@ -10,17 +10,19 @@
 **
 */
 
-#include <unistd.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 
+#include <unistd.h>
+
+
 #ifndef DEBUG 
-    #define DEBUG true
+    #define DEBUG false
 #endif
 
 #include "logger/logger.h"
-
 
 #include "common/constant.h"
 #include "server/struct.h"
@@ -34,10 +36,26 @@
 #endif
 
 logger_t *logger = NULL;
+volatile bool running = false; 
+
+static server_t server_info = {0};
+static client_list_t client_list = {0};
+
 
 static void usage(void)
 {
     
+}
+
+static void clean_exit(void)
+{
+    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Executing clean exit\n"));
+
+    close_server(&server_info, &client_list);
+    pthread_mutex_destroy(&client_list.clients_mutex);
+    pthread_cond_destroy(&client_list.clients_cond);
+    if (logger != NULL)
+        delete_logger(logger);
 }
 
 int main(int argc, char **argv, char **env)
@@ -47,10 +65,10 @@ int main(int argc, char **argv, char **env)
     (void) argv;
     (void) env;
 
+    atexit(clean_exit);
+
     pthread_t game_thread = 0;
 
-    server_t server_info = {0};
-    client_list_t client_list = {0};
 
     pthread_cond_init(&client_list.clients_cond, NULL);
     pthread_mutex_init(&client_list.clients_mutex, NULL);
@@ -61,14 +79,14 @@ int main(int argc, char **argv, char **env)
 
     if (logger == NULL) {
         dprintf(STDOUT_FILENO, ERROR_STR_C "Failed to initalize logger.\n");
-        return (-1);
+        return (ERROR);
     }
 
     // ToDo Parse input
 
     /* ToDo : MOCKUP DATA TO REMOVE */
 
-    server_info.port = 42691;
+    server_info.port = 42690;
     if (argc != 1)  {
         server_info.port = atoi(argv[1]);
     }
@@ -83,22 +101,18 @@ int main(int argc, char **argv, char **env)
 
     if (game_init() == ERROR) {
         log_msg(logger, LOG_ERROR, asprintf(&logger->msg, "Game initialisation failed\n"));
-        // close_server();
         return (ERROR);
     }
+
+    running = true;
 
     pthread_create(&game_thread, NULL, game_loop, &client_list);
 
     /* ToDo : Thread Game running */
-
+    
     server_loop(&server_info, &client_list);
 
     pthread_join(game_thread, NULL);
-
-    delete_logger(logger);
-
-    pthread_mutex_destroy(&client_list.clients_mutex);
-    pthread_cond_destroy(&client_list.clients_cond);
 
     return (SUCCESS);
 }

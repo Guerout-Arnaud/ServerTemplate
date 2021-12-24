@@ -75,7 +75,7 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
 
 void disconnect_client(int epollfd, int client_socket, client_list_t *list)
 {
-    struct epoll_event clt_ev = {.events=EPOLLIN | EPOLLET}; 
+    struct epoll_event clt_ev = {.events = EPOLLIN | EPOLLOUT | EPOLLET}; 
 
     memset(&list->clients[client_socket], 0, sizeof(*list->clients));
     epoll_ctl(epollfd, EPOLL_CTL_DEL, client_socket, &clt_ev);

@@ -21,11 +21,13 @@
 
 extern logger_t *logger;
 
+extern volatile bool running;
+
 
 int game_init()
 {
     /* TODO */
-    return (0);
+    return (SUCCESS);
 }
 
 void *game_loop(void *users_p)
@@ -34,7 +36,7 @@ void *game_loop(void *users_p)
 
     log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Game started\n"));
     
-    for (EVER) {
+    for (;running;) {
 
         pthread_mutex_lock(&users->clients_mutex);
         if (users->nb_clts_msgs <= 0) {
@@ -48,7 +50,6 @@ void *game_loop(void *users_p)
             if (users->clients[i].in != NULL) {
                 log_msg(logger, LOG_INFO, asprintf(&logger->msg, "User %d says %s\n", users->clients[i].socket, users->clients[i].in->content));
                 users->clients[i].in = list_del(users->clients[i].in, users->clients[i].in, list);
-
                 pthread_mutex_lock(&users->clients_mutex);
                 users->nb_clts_msgs--;
                 pthread_mutex_unlock(&users->clients_mutex);

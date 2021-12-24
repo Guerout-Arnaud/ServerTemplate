@@ -13,6 +13,7 @@
 #ifndef SERVER_STRUCT_H_
     #define SERVER_STRUCT_H_
 
+    #include <stdbool.h>
     #include <pthread.h>
 
     #include "linked_list/linked_list.h"
@@ -49,10 +50,11 @@
 
     typedef struct server_s
     {
+        volatile bool running;
         int port;
         int server_socket;
+        int signal_fd;
         int epollfd;
-
     } server_t;
 
 #endif

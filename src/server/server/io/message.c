@@ -23,35 +23,45 @@
 
 extern logger_t *logger;
 
-void receive_msg(client_t *client)
+char *receive_msg(int fd)
 {
     int idx = 0;
     ssize_t bytes = 0;
     char buff[MSG_BUFF_SIZE] = {0};
+    char *msg = NULL;
+    char *msg_tmp = NULL;
+    
+    bytes = read(fd, buff, MSG_BUFF_SIZE);
+
+    while (bytes > 0) {
+        msg_tmp = realloc(msg, sizeof(*msg) * (idx + bytes + 1));
+
+        if (msg_tmp == NULL)
+            break;
+
+        msg = msg_tmp;
+        strncpy(&msg[idx], buff, bytes);
+        idx = idx + bytes;
+        memset(buff, 0, MSG_BUFF_SIZE);
+
+        if (msg[idx - 1] == '\n')
+            break;
+        bytes = read(fd, buff, MSG_BUFF_SIZE);
+    }
+    msg[idx - 1] = '\0';
+    return (msg);
+}
+
+void buffer_msg(client_t *client)
+{
     message_t *msg = calloc(1, sizeof(*msg));
     
     if (msg == NULL)
         return;
 
-
-    bytes = read(client->socket, buff, MSG_BUFF_SIZE);
-
     /* FixMe : Not splitted around \n*/
-    while (bytes > 0) {
-        msg->content = realloc(msg->content, sizeof(*msg->content) * (idx + bytes + 1));
-        
-        if (msg->content == NULL)
-            break;
-        strncpy(&msg->content[idx], buff, bytes);
-        idx = idx + bytes;
-        memset(buff, 0, MSG_BUFF_SIZE);
-        
+    msg->content = receive_msg(client->socket);
 
-        if (msg->content[idx - 1] == '\n')
-            break;
-        bytes = read(client->socket, buff, MSG_BUFF_SIZE);
-    }
-    msg->content[idx - 1] = '\0';
     log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
 
     pthread_mutex_lock(&client->in_mutex);
