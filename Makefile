@@ -148,6 +148,7 @@ clean:
 	@find -name "*.s" -delete && \
         $(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
         $(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
+	@find -name "vgcore.*" -delete
 	@find -name "*.gcda" -delete
 	@find -name "*.gcno" -delete
 	@find -name "*.gcov" -delete && \
