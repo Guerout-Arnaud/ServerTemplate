@@ -32,7 +32,8 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
     int nfds = 1;
     client_t *clients_tmp = NULL;
     struct epoll_event srv_ev = {.events = EPOLLIN};
-    struct epoll_event clt_ev = {.events = EPOLLIN | EPOLLET}; 
+    struct epoll_event clt_ev = {.events = EPOLLIN}; 
+    // struct epoll_event clt_ev = {.events = EPOLLIN | EPOLLET}; 
     struct sockaddr_in client_addr = {0};
     socklen_t client_addr_len = sizeof(client_addr);
 
@@ -82,4 +83,14 @@ void disconnect_client(int epollfd, int client_socket, client_list_t *list)
     pthread_mutex_destroy(&list->clients[client_socket].in_mutex);
     pthread_mutex_destroy(&list->clients[client_socket].out_mutex);
     close(client_socket);
+}
+
+void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
+{
+    // struct epoll_event clt_ev = {.events = io | EPOLLET, .data.fd = client_socket};
+    struct epoll_event clt_ev = {.events = io, .data.fd = client_socket};
+
+    if (epoll_ctl(epollfd, EPOLL_CTL_MOD, client_socket, &clt_ev) == -1) {
+        log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to modify poll event.\n"));
+    }
 }

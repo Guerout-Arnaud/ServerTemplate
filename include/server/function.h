@@ -13,6 +13,8 @@
 #ifndef SERVER_FUNCTION_H_
     #define SERVER_FUNCTION_H_
 
+    #include <stdint.h>
+
     #include "server/struct.h"
 
     /*! @fn server_init 
@@ -70,6 +72,9 @@
     */
     void disconnect_client(int epollfd, int client_socket, client_list_t *clients_list);
 
+    /* ToDo : ADD Doc */
+    void mod_poll_ev(int epollfd, int client_socket, uint32_t io);
+
     /*! @fn admin_cmd_mngt 
     * @brief Gets and execute admin command.
     * 
@@ -90,9 +95,9 @@
     * @brief Receive messages and buffer them.
     * 
     * @param client 
-    * @return void 
+    * @return int Status of the message (ERROR = message NULL) 
     */
-   void buffer_msg(client_t *client);
+   int buffer_msg(client_t *client);
 
     /*! @fn send_msg 
     * @brief send a message to a socket.

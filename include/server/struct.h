@@ -50,7 +50,6 @@
 
     typedef struct server_s
     {
-        volatile bool running;
         int port;
         int server_socket;
         int signal_fd;

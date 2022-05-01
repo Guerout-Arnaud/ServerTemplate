@@ -48,16 +48,20 @@ char *receive_msg(int fd)
             break;
         bytes = read(fd, buff, MSG_BUFF_SIZE);
     }
-    msg[idx - 1] = '\0';
+    if (msg != NULL)
+        msg[idx - 1] = '\0';
+    printf("MSG = %s\n", msg);
     return (msg);
 }
 
-void buffer_msg(client_t *client)
+int buffer_msg(client_t *client)
 {
     message_t *msg = calloc(1, sizeof(*msg));
     
+    /* Info : Memory error return success cause message has not been retrived yet */
     if (msg == NULL)
-        return;
+        return (SUCCESS);
+        
 
     /* FixMe : Not splitted around \n*/
     msg->content = receive_msg(client->socket);
@@ -70,12 +74,13 @@ void buffer_msg(client_t *client)
 
     pthread_mutex_unlock(&client->in_mutex);
 
-    return;
+    return (msg->content != NULL ? SUCCESS : ERROR);
 }
 
 void send_msg(int socket, char *msg)
 {
     /* ToDo Serialize before send */
+    printf("MSG:\"%s\"\n", msg);
     dprintf(socket, "%s%s", msg, MSG_BUFFER_END);
     return;
 }

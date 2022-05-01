@@ -19,8 +19,10 @@
     #define PROTOCOL "TCP"
     #define MSG_BUFF_SIZE 64
     #define TIMEOUT -1
+    // #define TIMEOUT 1000
 
-    static const char MSG_BUFFER_END[] = "\r\n\r\n";
+    static const char MSG_BUFFER_END[] = "\n";
+    // static const char MSG_BUFFER_END[] = "\r\n\r\n";
 
     static const char internal_error_msg[] = "Server internal error. Please try to log again\n";
 

@@ -156,7 +156,10 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
 
     for (;running;) {
 
+        log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "WAIT ON\n"));
         nfds = epoll_wait(server_info->epollfd, events, (int)MAX_EVENTS, (int)TIMEOUT);
+        log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "WAIT OFF\n"));
+
         if (nfds == -1) {
             log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Epoll wait failed.\n"));
             sleep(60); /* Hack This prevents for a log spam which could be lead to bigger issues */
@@ -170,7 +173,7 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
         wait_err = 0;
 
         for (int i = 0; i < nfds; i++) {
-            log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Data on fd: %d.\n", events[i].data.fd));
+            // log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Data[%d] on fd: %d.\n", i, events[i].data.fd));
             if (events[i].data.fd == server_info->server_socket) {
                 connect_clients(server_info->server_socket, server_info->epollfd, clients_list);
             } else if (events[i].data.fd == server_info->signal_fd) {
@@ -194,16 +197,42 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
                 admin_cmd_mngt();
 
             } else {
+                if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
+                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "ERROR or HUP\n"));
+
+                    disconnect_client(server_info->epollfd ,events[i].data.fd, clients_list);
+
+                    events[i].events = 0;
+                    continue;
+                } 
                 if (events[i].events & EPOLLIN) {
-                    buffer_msg(&clients_list->clients[events[i].data.fd]);
+                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "IN\n"));
+                    // events[i].events = events[i].events & ~EPOLLIN;
+
+                    if (buffer_msg(&clients_list->clients[events[i].data.fd]) == ERROR) {
+                        disconnect_client(server_info->epollfd, events[i].data.fd, clients_list);
+                        continue;
+                    }
+
+                    mod_poll_ev(server_info->epollfd, events[i].data.fd, EPOLLOUT);
+
                     pthread_mutex_lock(&clients_list->clients_mutex);
                     clients_list->nb_clts_msgs++;
                     pthread_mutex_unlock(&clients_list->clients_mutex);
                     pthread_cond_signal(&clients_list->clients_cond);
-                } else if (events[i].events & EPOLLOUT) {
-                    unbuffer_msg(&clients_list->clients[events[i].data.fd]);
-                } else if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
-                    disconnect_client(server_info->epollfd ,events[i].data.fd, clients_list);
+
+                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "END_IN-------\n"));
+
+
+                }
+                if (events[i].events & EPOLLOUT) {
+                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "OUT\n"));
+                    // events[i].events = events[i].events & ~EPOLLOUT;
+
+                    if (clients_list->clients[events[i].data.fd].out != NULL) {
+                        mod_poll_ev(server_info->epollfd, events[i].data.fd, EPOLLIN);
+                        unbuffer_msg(&clients_list->clients[events[i].data.fd]);
+                    }
                 }
             }
         }
