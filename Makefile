@@ -49,7 +49,7 @@ OBJ_TEST	=	$(SRC_TEST:.c=.o)
 
 ## ------- FLAGS --------##
 
-cflags.common	:=	-W -Wall -Wextra -Wno-unused-variable -Wno-unused-function -D_GNU_SOURCE -I./include/ -I./lib/include/
+cflags.common	:=	-W -Wall -Wextra -Wno-unused-variable -Wno-unused-function -D_GNU_SOURCE -I./include/ -I./include/server -I./lib/include/
 cflags.debug	:=	-g3  -save-temps=obj -DDEBUG=true
 cflags.release	:= 
 cflags.tests	:=

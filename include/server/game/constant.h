@@ -1,12 +1,11 @@
-/*
+/*!
 ** ServerTemplate PROJECT, 2022
-** constant.h
+** @file constant.h
 ** File description:
-** Constants (macro and const variables) definition for game part of the project
-** Author:
-** Arnaud Guerout
-** https://github.com/Guerout-Arnaud
-** Contributors:
+** @brief Constants (macro and const variables) definition for game part of the project
+** @author
+** [Arnaud Guerout](https://github.com/Guerout-Arnaud)
+** @authors
 **
 */
 
