@@ -21,7 +21,7 @@
 #include "server/constant.h"
 #include "server/struct.h"
 
-extern logger_t *logger;
+extern logger_t *server_logger;
 
 char *receive_msg(int fd)
 {
@@ -50,7 +50,6 @@ char *receive_msg(int fd)
     }
     if (msg != NULL)
         msg[idx - 1] = '\0';
-    printf("MSG = %s\n", msg);
     return (msg);
 }
 
@@ -66,7 +65,7 @@ int buffer_msg(client_t *client)
     /* FixMe : Not splitted around \n*/
     msg->content = receive_msg(client->socket);
 
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
+    log_msg(server_logger, LOG_DEBUG | LOG_INFO, asprintf(&server_logger->msg, "New message logged : \"%s\".\n", msg->content));
 
     pthread_mutex_lock(&client->in_mutex);
 

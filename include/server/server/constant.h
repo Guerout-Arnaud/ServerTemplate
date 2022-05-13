@@ -13,6 +13,10 @@
 #ifndef SERVER_CONSTANT_H_
     #define SERVER_CONSTANT_H_
 
+    #ifndef SERVER_FILE_NAME
+        #define SERVER_FILE_NAME "server.log"
+    #endif
+
     #define PORT 80
     #define MAX_EVENTS 10
     #define MAX_AWAITING_CLIENTS 10

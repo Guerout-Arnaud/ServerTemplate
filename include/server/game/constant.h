@@ -14,6 +14,10 @@
 
     #include "logger/logger.h"
 
+    #ifndef GAME_FILE_NAME
+        #define GAME_FILE_NAME "game.log"
+    #endif
+
 
     #define GAME_HEADER "[" BOLD(GREEN("GAME")) "] "
 

@@ -16,21 +16,17 @@
 
     #define EVER ;;
 
-    // #ifndef CONSOLE_OUTPUT 
-    //     #define CONSOLE_OUTPUT true
-    // #endif
+    #ifndef CONSOLE_OUTPUT 
+        #define CONSOLE_OUTPUT true
+    #endif
 
-    // #ifndef FILE_OUTPUT 
-    //     #define FILE_OUTPUT false
-    // #endif
+    #ifndef FILE_OUTPUT 
+        #define FILE_OUTPUT false
+    #endif
 
-    // #ifndef OUTPUT_FILE_NAME
-    //     #define OUTPUT_FILE_NAME NULL
-    // #endif
-
-    // #ifndef DEBUG 
-    //     #define DEBUG false
-    // #endif
+    #ifndef DEBUG 
+        #define DEBUG false
+    #endif
 
     static const int SUCCESS = 0;
     static const int ERROR = -1;

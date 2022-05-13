@@ -22,7 +22,7 @@
 #include "server/constant.h"
 #include "server/struct.h"
 
-extern logger_t *logger;
+extern logger_t *server_logger;
 
 int server_epollfd = -1;
 
@@ -40,11 +40,11 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
     while (nfds == 1 && srv_ev.events & EPOLLIN) {
         client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_len);
         if (client_socket == -1) {
-            log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Error while accepting client.\n"));
+            log_msg(server_logger, LOG_WARN, asprintf(&server_logger->msg, "Error while accepting client.\n"));
             return;
         }
 
-        log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Client Socket is %d\n", client_socket));
+        log_msg(server_logger, LOG_INFO, asprintf(&server_logger->msg, "Client Socket is %d\n", client_socket));
 
         if (client_socket > list->max_connected_clt) {
             clients_tmp = realloc(list->clients, list->max_connected_clt + (size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS);
@@ -52,7 +52,7 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
                 list->clients = clients_tmp;
                 list->max_connected_clt = list->max_connected_clt + (size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS;
             } else {
-                log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to accept client. Out of memory.\n"));
+                log_msg(server_logger, LOG_WARN, asprintf(&server_logger->msg, "Unable to accept client. Out of memory.\n"));
                 dprintf(client_socket, "%s%s", internal_error_msg, MSG_BUFFER_END);
                 close(client_socket);
             }
@@ -60,7 +60,7 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
 
         clt_ev.data.fd = client_socket;
         if (epoll_ctl(epollfd, EPOLL_CTL_ADD, client_socket, &clt_ev) == -1) {
-            log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to add client to poll list.\n"));
+            log_msg(server_logger, LOG_WARN, asprintf(&server_logger->msg, "Unable to add client to poll list.\n"));
             dprintf(client_socket, "%s%s", internal_error_msg, MSG_BUFFER_END);
             close(client_socket);
         }
@@ -78,6 +78,18 @@ void disconnect_client(int epollfd, int client_socket, client_list_t *list)
 {
     struct epoll_event clt_ev = {.events = EPOLLIN | EPOLLOUT | EPOLLET}; 
 
+    for (message_t *next = NULL; list->clients[client_socket].in != NULL; list->clients[client_socket].in = next) {
+        next = list_next(list->clients[client_socket].in, list);
+
+        free(list->clients[client_socket].in);
+    }
+
+    for (message_t *next = NULL; list->clients[client_socket].out != NULL; list->clients[client_socket].out = next) {
+        next = list_next(list->clients[client_socket].out, list);
+
+        free(list->clients[client_socket].out);
+    }
+
     memset(&list->clients[client_socket], 0, sizeof(*list->clients));
     epoll_ctl(epollfd, EPOLL_CTL_DEL, client_socket, &clt_ev);
     pthread_mutex_destroy(&list->clients[client_socket].in_mutex);
@@ -91,6 +103,6 @@ void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
     struct epoll_event clt_ev = {.events = io, .data.fd = client_socket};
 
     if (epoll_ctl(epollfd, EPOLL_CTL_MOD, client_socket, &clt_ev) == -1) {
-        log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to modify poll event.\n"));
+        log_msg(server_logger, LOG_WARN, asprintf(&server_logger->msg, "Unable to modify poll event.\n"));
     }
 }
