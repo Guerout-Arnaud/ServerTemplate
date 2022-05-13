@@ -20,4 +20,7 @@
 
     void *game_loop(void *users_p);
 
+    int run_cmd(char *command, user_t *player);
+
+
 #endif

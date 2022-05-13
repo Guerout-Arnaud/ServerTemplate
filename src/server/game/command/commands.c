@@ -1,50 +1,92 @@
 /*!
-** ServerTemplate PROJECT, 2021
-** @file commands.c
+** PetitBain PROJECT, 2022
+** @file operator.c
 ** File description:
-** @brief Admin commands management
+** @brief Operator commands management
 ** @author
-**  [Arnaud Guerout](https://github.com/Guerout-Arnaud)
-** Contributors:
+** [Arnaud Guerout](https://github.com/Guerout-Arnaud)
+** https://github.com/Guerout-Arnaud
 ** @authors
 **
 */
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#include <unistd.h>
+#include <stdio.h>
 
 #include "logger/logger.h"
 
+#include <common/constant.h>
+
 #include "game/function.h"
-#include "game/constant.h"
+#include "game/struct.h"
 
 extern logger_t *logger;
 
-static const char *GAME_COMMANDS[] = {NULL};
-static void (*game_cmds[])(char *) = {NULL};
+unsigned int connection_cmd(char *command, user_t *player);
 
-void game_cmd_mngt(char *input, user_t *user)
+
+const char *GAME_COMMANDS[] = {"test", /* "start_simulation", "create_world", */ NULL};
+unsigned int (*game_cmds[])(char *, user_t *) = {connection_cmd, /* start_simulation, create_world */ NULL};
+
+team_t *teams = NULL;
+
+team_t *get_team(char *teamname)
 {
-    if (input == NULL)
-        return;
+    for (team_t *team = teams; team != NULL; team = list_next(team, list)) {
+        if (strcmp(team->name, teamname) == 0)
+            return (team);
+    }
+    return (NULL);
+}
 
-    /* ToDo : Make my own strtok_r. which would split on complete string */
-    for (char *saveptr = NULL, *command = strtok_r(input, "\n\r", &saveptr);
-        command != NULL ;
-        command = strtok_r(NULL, "\n\r", &saveptr)) {
-
-        log_msg(logger, LOG_INFO, asprintf(&logger->msg, "New command from Admin : %s\n", command));
-
-        for (size_t i = 0; GAME_COMMANDS[i] != NULL; i++) {
-            if (strcmp(command, GAME_COMMANDS[i]) == 0) {
-                // printf("%s found !\n", command);
-                game_cmds[i](command);
-                break;
-            }
+int run_cmd(char *command, user_t *player)
+{
+    for(int j = 0; GAME_COMMANDS[j] != NULL; j++) {
+        // printf("%d\n", j);
+        // printf("%s\n", GAME_COMMANDS[j]);
+        if (strcmp(command, GAME_COMMANDS[j]) == 0) {
+            log_msg(logger, LOG_INFO, asprintf(&logger->msg, GREEN("[GAME]") "User %s used command %s\n", player->username, command));
+            return (game_cmds[j](command, player));
+            break;
         }
     }
 
+    return (ERROR);
+}
+
+unsigned int connection_cmd(char *command, user_t *player)
+{
+
+    /* FixMe extract teamname from command */
+    char *teamname = command;
+
+    team_t *team = get_team(teamname);
+
+    if (teams == NULL) {
+        team = malloc(sizeof(*team));
+        list_init(team, list);
+        team->name = strdup(teamname);
+        team->power = 0;
+        team->players = malloc(sizeof(*team->players));
+        team->players[0] = NULL;
+        teams = list_add(teams, team, list);
+    }
+
+    int nb_players = 0;
+    for (nb_players = 0; team->players[nb_players] != NULL; nb_players++);
+
+    user_t **players_tmp = realloc(team->players, sizeof(*players_tmp) * (nb_players + 2));
+    if (players_tmp == NULL) {
+        /* ToDo : Error management */
+        return (0);
+    }
+    team->players =  players_tmp;
+    team->players[nb_players] = player;
+    team->players[nb_players + 1] = NULL;
+
+    return (220);
+    // logger_log(logger, LOG_INFO, "con nection command received");
 }

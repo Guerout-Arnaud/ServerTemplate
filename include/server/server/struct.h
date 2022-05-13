@@ -18,13 +18,8 @@
 
     #include "linked_list/linked_list.h"
     
+    #include "common/struct.h"
     #include "game/struct.h"
-
-    typedef struct message_s {
-        char *content;
-
-        linked_list_t list;
-    } message_t;
 
     typedef struct client_s {
         int socket;

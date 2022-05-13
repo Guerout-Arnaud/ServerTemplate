@@ -1,8 +1,8 @@
 /*!
 ** ServerTemplate PROJECT, 2021
-** @file server.c
+** @file message.c
 ** File description:
-** @brief Server messaging system
+** @brief Client messaging system
 ** @author
 **  [Arnaud Guerout](https://github.com/Guerout-Arnaud)
 ** Contributors:
@@ -18,8 +18,7 @@
 #include "logger/logger.h"
 
 #include "common/constant.h"
-#include "server/constant.h"
-#include "server/struct.h"
+#include "client/struct.h"
 
 extern logger_t *logger;
 
@@ -50,11 +49,11 @@ char *receive_msg(int fd)
     }
     if (msg != NULL)
         msg[idx - 1] = '\0';
-    // printf("MSG = %s\n", msg);
+    printf("MSG = %s\n", msg);
     return (msg);
 }
 
-int buffer_msg(client_t *client)
+int buffer_msg(connection_t *client_info)
 {
     message_t *msg = calloc(1, sizeof(*msg));
 
@@ -64,15 +63,31 @@ int buffer_msg(client_t *client)
 
 
     /* FixMe : Not splitted around \n*/
-    msg->content = receive_msg(client->socket);
+    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Trying to get msg from : %d.\n",client_info->client_socket));
+    msg->content = receive_msg(client_info->client_socket);
 
     log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
 
-    pthread_mutex_lock(&client->in_mutex);
+    client_info->in = list_add(client_info->in, msg, list);
 
-    client->in = list_add(client->in, msg, list);
+    return (msg->content != NULL ? SUCCESS : ERROR);
+}
 
-    pthread_mutex_unlock(&client->in_mutex);
+int queue_msg(connection_t *client_info, char *message)
+{
+    message_t *msg = calloc(1, sizeof(*msg));
+
+    /* Info : Memory error return success cause message has not been retrived yet */
+    if (msg == NULL)
+        return (SUCCESS);
+
+
+    /* FixMe : Not splitted around \n*/
+    msg->content = message;
+
+    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
+
+    client_info->out = list_add(client_info->out, msg, list);
 
     return (msg->content != NULL ? SUCCESS : ERROR);
 }
@@ -80,19 +95,17 @@ int buffer_msg(client_t *client)
 void send_msg(int socket, char *msg)
 {
     /* ToDo Serialize before send */
-    // printf("MSG:\"%s\"\n", msg);
+    printf("MSG:\"%s\"\n", msg);
     dprintf(socket, "%s%s", msg, MSG_BUFFER_END);
     return;
 }
 
-void unbuffer_msg(client_t *client)
+void unbuffer_msg(connection_t *client_info)
 {
-    for (message_t *msg = client->out; msg != NULL; msg = client->out) {
-        send_msg(client->socket, msg->content);
+    for (message_t *msg = client_info->out; msg != NULL; msg = client_info->out) {
+        send_msg(client_info->client_socket, msg->content);
 
-        pthread_mutex_lock(&client->out_mutex);
-        client->out = list_del(client->out, msg, list);
-        pthread_mutex_unlock(&client->out_mutex);
+        client_info->out = list_del(client_info->out, msg, list);
 
         free(msg->content);
         free(msg);

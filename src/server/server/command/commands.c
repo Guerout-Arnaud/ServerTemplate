@@ -21,7 +21,7 @@
 #include "server/function.h"
 #include "server/constant.h"
 
-extern logger_t *server_logger;
+extern logger_t *logger;
 
 static const char *ADMIN_COMMANDS[] = {NULL};
 static void (*admin_cmds[])(char *) = {NULL};
@@ -38,7 +38,7 @@ void admin_cmd_mngt(void)
         command != NULL ; 
         command = strtok_r(NULL, "\n\r", &saveptr)) {
         
-        log_msg(server_logger, LOG_INFO, asprintf(&server_logger->msg, "New command from Admin : %s\n", command));
+        log_msg(logger, LOG_INFO, asprintf(&logger->msg, "New command from Admin : %s\n", command));
 
         for (size_t i = 0; ADMIN_COMMANDS[i] != NULL; i++) {
             if (strcmp(command, ADMIN_COMMANDS[i]) == 0) {

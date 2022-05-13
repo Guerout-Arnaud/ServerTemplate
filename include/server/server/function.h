@@ -21,17 +21,9 @@
     * @brief Server initialisation function.
     * 
     * @param server_info 
-    * @return int 
+    * @return int Status of the server either 0 (Success) or -1 (Error)
     */
     int server_init(server_t *server_info, client_list_t *clients_list);
-
-    /*! @fn setup_signals 
-    * @brief Server initialisation function.
-    * 
-    * @param void 
-    * @return int 
-    */
-    int setup_signals(void);
 
     /** @fn server_loop
      * @brief This function is the main server loop that waits for messages

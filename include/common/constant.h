@@ -16,19 +16,34 @@
 
     #define EVER ;;
 
-    #ifndef CONSOLE_OUTPUT 
-        #define CONSOLE_OUTPUT true
-    #endif
-
-    #ifndef FILE_OUTPUT 
-        #define FILE_OUTPUT false
-    #endif
-
     #ifndef DEBUG 
         #define DEBUG false
     #endif
 
+    #ifndef PORT
+        #define PORT 80
+    #endif
+
+    #ifndef PROTOCOL
+        #define PROTOCOL "TCP"
+    #endif
+    
+    #ifndef MSG_BUFF_SIZE
+        #define MSG_BUFF_SIZE 64
+    #endif
+    
+    #ifndef TIMEOUT
+        #define TIMEOUT -1
+    #endif
+
+    #ifndef ERROR_STR_C
+        #define ERROR_STR_C "[" BLINK(BOLD(RED("ERROR"))) "] "
+#   endif
+
     static const int SUCCESS = 0;
     static const int ERROR = -1;
+
+    // static const char MSG_BUFFER_END[] = "\r\n\r\n";
+    static const char MSG_BUFFER_END[] = "\n";
 
 #endif
