@@ -29,11 +29,10 @@ static void usage(void)
 
 static void clean_exit(void)
 {
-    // log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Executing clean exit\n"));
+    // log_msg(LOG_INFO, "Executing clean exit\n");
 
     client_close(&client_info);
-    if (logger != NULL)
-        delete_logger(logger);
+    logger_destroy();
 }
 
 void *ui(void *arg)
@@ -65,8 +64,9 @@ int main(int argc, char **argv, char **env)
 
     atexit(clean_exit);
 
-    logger = create_logger(true, false, NULL, DEBUG);
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Logger started\n"));
+    logger_init(DEBUG, true, true);
+    // logger = create_logger(true, false, NULL, DEBUG);
+    log_msg(LOG_INFO, "Logger started\n");
 
     if (logger == NULL) {
         dprintf(STDOUT_FILENO, ERROR_STR_C "Failed to initalize logger.\n");
@@ -86,15 +86,15 @@ int main(int argc, char **argv, char **env)
     }
 
     if (pipe(client_info.pipe) != 0) {
-        log_msg(logger, LOG_ERROR, asprintf(&logger->msg, "Failed to create pipe.\n"));
+        log_msg(LOG_ERROR, "Failed to create pipe.\n");
         return (ERROR);
     }
 
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Connecting to %s:%d\n", client_info.ip_addr, client_info.port));
+    log_msg(LOG_INFO, "Connecting to %s:%d\n", client_info.ip_addr, client_info.port);
 
 
     if (client_init(&client_info) == ERROR) {
-        log_msg(logger, LOG_ERROR, asprintf(&logger->msg, "Failed to initialize client\n"));
+        log_msg(LOG_ERROR, "Failed to initialize client\n");
         return (ERROR);
     }
 

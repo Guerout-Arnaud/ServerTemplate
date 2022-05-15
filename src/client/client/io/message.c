@@ -63,10 +63,10 @@ int buffer_msg(connection_t *client_info)
 
 
     /* FixMe : Not splitted around \n*/
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Trying to get msg from : %d.\n",client_info->client_socket));
+    log_msg(LOG_DEBUG | LOG_INFO, "Trying to get msg from : %d.\n",client_info->client_socket);
     msg->content = receive_msg(client_info->client_socket);
 
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
+    log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
     client_info->in = list_add(client_info->in, msg, list);
 
@@ -85,7 +85,7 @@ int queue_msg(connection_t *client_info, char *message)
     /* FixMe : Not splitted around \n*/
     msg->content = message;
 
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
+    log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
     client_info->out = list_add(client_info->out, msg, list);
 

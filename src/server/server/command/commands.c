@@ -3,11 +3,11 @@
 ** @file commands.c
 ** File description:
 ** @brief Admin commands management
-** @author 
+** @author
 **  [Arnaud Guerout](https://github.com/Guerout-Arnaud)
 ** Contributors:
-** @authors 
-**  
+** @authors
+**
 */
 
 #include <stddef.h>
@@ -35,10 +35,10 @@ void admin_cmd_mngt(void)
 
     /* ToDo : Make my own strtok_r. which would split on complete string */
     for (char *saveptr = NULL, *command = strtok_r(msg_buff, "\n\r", &saveptr);
-        command != NULL ; 
+        command != NULL ;
         command = strtok_r(NULL, "\n\r", &saveptr)) {
-        
-        log_msg(logger, LOG_INFO, asprintf(&logger->msg, "New command from Admin : %s\n", command));
+
+        log_msg(LOG_INFO, "New command from Admin : %s\n", command);
 
         for (size_t i = 0; ADMIN_COMMANDS[i] != NULL; i++) {
             if (strcmp(command, ADMIN_COMMANDS[i]) == 0) {

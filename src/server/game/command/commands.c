@@ -48,7 +48,7 @@ int run_cmd(char *command, user_t *player)
         // printf("%d\n", j);
         // printf("%s\n", GAME_COMMANDS[j]);
         if (strcmp(command, GAME_COMMANDS[j]) == 0) {
-            log_msg(logger, LOG_INFO, asprintf(&logger->msg, GREEN("[GAME]") "User %s used command %s\n", player->username, command));
+            log_msg(LOG_INFO, GREEN("[GAME]") "User %s used command %s\n", player->username, command);
             return (game_cmds[j](command, player));
             break;
         }

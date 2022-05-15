@@ -40,13 +40,12 @@ static void usage(void)
 
 static void clean_exit(void)
 {
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Executing clean exit\n"));
+    log_msg(LOG_INFO, "Executing clean exit\n");
 
     close_server(&server_info, &client_list);
     pthread_mutex_destroy(&client_list.clients_mutex);
     pthread_cond_destroy(&client_list.clients_cond);
-    if (logger != NULL)
-        delete_logger(logger);
+    logger_destroy();
 }
 
 int main(int argc, char **argv, char **env)
@@ -64,9 +63,9 @@ int main(int argc, char **argv, char **env)
     pthread_cond_init(&client_list.clients_cond, NULL);
     pthread_mutex_init(&client_list.clients_mutex, NULL);
 
+    logger_init(DEBUG, true, true);
     // logger = create_logger(true, true, NULL, DEBUG);
-    logger = create_logger(true, false, NULL, DEBUG);
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Logger started\n"));
+    log_msg(LOG_INFO, "Logger started\n");
 
     if (logger == NULL) {
         dprintf(STDOUT_FILENO, ERROR_STR_C "Failed to initalize logger.\n");
@@ -86,12 +85,12 @@ int main(int argc, char **argv, char **env)
     /* ToDo : MOCKUP DATA TO REMOVE */
 
     if (server_init(&server_info, &client_list) == ERROR) {
-        log_msg(logger, LOG_ERROR, asprintf(&logger->msg, "Server initialisation failed\n"));
+        log_msg(LOG_ERROR,"Server initialisation failed\n");
         return (ERROR);
     }
 
     if (game_init() == ERROR) {
-        log_msg(logger, LOG_ERROR, asprintf(&logger->msg, "Game initialisation failed\n"));
+        log_msg(LOG_ERROR, "Game initialisation failed\n");
         return (ERROR);
     }
 

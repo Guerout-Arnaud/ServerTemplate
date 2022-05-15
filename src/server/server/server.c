@@ -36,7 +36,7 @@ extern int server_epollfd;
 
 void close_server(server_t *server_info, client_list_t *clients_list)
 {
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Closing Server.\n"));
+    log_msg(LOG_INFO, "Closing Server.\n");
 
 
     if (server_info->server_socket != -1)
@@ -44,7 +44,7 @@ void close_server(server_t *server_info, client_list_t *clients_list)
     if (server_info->signal_fd != -1)
         close(server_info->signal_fd);
 
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Disconnecting clients.\n"));
+    log_msg(LOG_INFO, "Disconnecting clients.\n");
     for (int i = 5; i < clients_list->max_connected_clt; i++) {
         if (clients_list->clients[i].socket <= 0)
             continue;
@@ -69,13 +69,12 @@ void close_server(server_t *server_info, client_list_t *clients_list)
         close(server_info->epollfd);
     if (server_epollfd != -1)
         close(server_epollfd);
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Server Closed.\n"));
-
+    log_msg(LOG_INFO, "Server Closed.\n");
 }
 
 int server_init(server_t *server_info, client_list_t *clients_list)
 {
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Initialising server.\n"));
+    log_msg(LOG_INFO, "Initialising server.\n");
 
     struct epoll_event ev = {.events = EPOLLIN};
     struct sockaddr_in socket_in = {0};
@@ -117,7 +116,7 @@ int server_init(server_t *server_info, client_list_t *clients_list)
     if (epoll_ctl(server_info->epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev) == -1) {
 
         close_server(server_info, clients_list);
-        // log_msg(logger, LOG_DEBUG | LOG_ERROR, asprintf(&logger->msg, "Unable to create server\n"));
+        log_msg(LOG_DEBUG | LOG_ERROR, "Unable to create server\n");
         return (ERROR);
     }
 
@@ -130,14 +129,14 @@ int server_init(server_t *server_info, client_list_t *clients_list)
     clients_list->clients = calloc((size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS + 5, sizeof(*clients_list->clients));
     if (clients_list->clients == NULL) {
         close_server(server_info, clients_list);
-        log_msg(logger, LOG_DEBUG | LOG_ERROR, asprintf(&logger->msg, "Calloc failed\n"));
+        log_msg(LOG_DEBUG | LOG_ERROR, "Calloc failed\n");
         return (ERROR);
     }
 
     /* Hack : Do not put this line before calloc is done. Value of max_connected_clt is used to close server*/
     clients_list->max_connected_clt = (size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS + 5;
 
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Server is ready.\n"));
+    log_msg(LOG_INFO, "Server is ready.\n");
 
     return (SUCCESS);
 }
@@ -146,24 +145,25 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
 {
 
     /* FixMe : Use logger */
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Starting Server loop.\n"));
+    log_msg(LOG_INFO, "Starting Server loop.\n");
 
     static unsigned int wait_err = 0;
     int nfds = 0;
     struct epoll_event events[MAX_EVENTS] = {0};
 
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Server socket: %d.\n", server_info->server_socket));
+    log_msg(LOG_DEBUG | LOG_INFO, "Server socket: %d.\n", server_info->server_socket);
 
     for (;running;) {
 
-        // log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "WAIT ON\n"));
+        log_msg(LOG_DEBUG | LOG_INFO, "WAIT ON\n");
         nfds = epoll_wait(server_info->epollfd, events, (int)MAX_EVENTS, (int)TIMEOUT);
-        // log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "WAIT OFF\n"));
+        log_msg(LOG_DEBUG | LOG_INFO, "WAIT OFF\n");
 
         if (nfds == -1) {
-            log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Epoll wait failed.\n"));
+            log_msg(LOG_WARN, "Epoll wait failed.\n");
             sleep(60); /* Hack This prevents for a log spam which could be lead to bigger issues */
             if (wait_err++ > 5) {
+                log_msg(LOG_ERROR, "Too many epoll fails.\n");
                 close_server(server_info, clients_list);
                 return (ERROR);
             } else
@@ -173,21 +173,19 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
         wait_err = 0;
 
         for (int i = 0; i < nfds; i++) {
-            // log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "Data[%d] on fd: %d.\n", i, events[i].data.fd));
+            log_msg(LOG_DEBUG | LOG_INFO, "Data[%d] on fd: %d.\n", i, events[i].data.fd);
             if (events[i].data.fd == server_info->server_socket) {
                 connect_clients(server_info->server_socket, server_info->epollfd, clients_list);
             } else if (events[i].data.fd == server_info->signal_fd) {
-                // printf("Signal received\n");
-
                 struct signalfd_siginfo rcv_signal = {0};
 
                 if (read(server_info->signal_fd, &rcv_signal, sizeof(struct signalfd_siginfo)) != sizeof(struct signalfd_siginfo))
-                    log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Cannot receive signal. You may have to kill process using : kill %d\n", getpid()));
+                    log_msg(LOG_WARN, "Cannot receive signal. You may have to kill process using : kill %d\n", getpid());
 
                 if (rcv_signal.ssi_signo == SIGINT || rcv_signal.ssi_signo == SIGQUIT) {
                     running = false;
                     pthread_cond_signal(&clients_list->clients_cond);
-                    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Sever shutdown asked by admin using signal\n"));
+                    log_msg(LOG_INFO, "Sever shutdown asked by admin using signal\n");
                     break;
                 }
 
@@ -198,7 +196,7 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
 
             } else {
                 if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
-                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "ERROR or HUP\n"));
+                    log_msg(LOG_DEBUG | LOG_WARN, "ERROR or HUP\n");
 
                     disconnect_client(server_info->epollfd ,events[i].data.fd, clients_list);
 
@@ -206,8 +204,7 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
                     continue;
                 }
                 if (events[i].events & EPOLLIN) {
-                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "IN\n"));
-                    // events[i].events = events[i].events & ~EPOLLIN;
+                    log_msg(LOG_DEBUG | LOG_INFO, "EPOLLIN\n");
 
                     if (buffer_msg(&clients_list->clients[events[i].data.fd]) == ERROR) {
                         disconnect_client(server_info->epollfd, events[i].data.fd, clients_list);
@@ -221,18 +218,17 @@ int server_loop(server_t *server_info, client_list_t *clients_list)
                     pthread_mutex_unlock(&clients_list->clients_mutex);
                     pthread_cond_signal(&clients_list->clients_cond);
 
-                    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "END_IN-------\n"));
-
-
+                    log_msg(LOG_DEBUG | LOG_INFO, "END EPOLLIN\n");
                 }
                 if (events[i].events & EPOLLOUT) {
-                    // log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "OUT\n"));
+                    log_msg(LOG_DEBUG | LOG_INFO, "EPOLLOUT\n");
                     // events[i].events = events[i].events & ~EPOLLOUT;
 
                     if (clients_list->clients[events[i].data.fd].out != NULL) {
                         mod_poll_ev(server_info->epollfd, events[i].data.fd, EPOLLIN);
                         unbuffer_msg(&clients_list->clients[events[i].data.fd]);
                     }
+                    log_msg(LOG_DEBUG | LOG_INFO, "END EPOLLOUT\n");
                 }
             }
         }

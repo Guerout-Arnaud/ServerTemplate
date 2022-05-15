@@ -66,7 +66,7 @@ int buffer_msg(client_t *client)
     /* FixMe : Not splitted around \n*/
     msg->content = receive_msg(client->socket);
 
-    log_msg(logger, LOG_DEBUG | LOG_INFO, asprintf(&logger->msg, "New message logged : \"%s\".\n", msg->content));
+    log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
     pthread_mutex_lock(&client->in_mutex);
 

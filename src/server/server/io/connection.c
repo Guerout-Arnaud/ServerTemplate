@@ -40,11 +40,11 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
     while (nfds == 1 && srv_ev.events & EPOLLIN) {
         client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_len);
         if (client_socket == -1) {
-            log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Error while accepting client.\n"));
+            log_msg(LOG_WARN, "Error while accepting client.\n");
             return;
         }
 
-        log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Client Socket is %d\n", client_socket));
+        log_msg(LOG_INFO, "Client Socket is %d\n", client_socket);
 
         if (client_socket > list->max_connected_clt) {
             clients_tmp = realloc(list->clients, list->max_connected_clt + (size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS);
@@ -52,7 +52,7 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
                 list->clients = clients_tmp;
                 list->max_connected_clt = list->max_connected_clt + (size_t)MAX_AWAITING_CLIENTS + (size_t)MAX_EVENTS;
             } else {
-                log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to accept client. Out of memory.\n"));
+                log_msg(LOG_WARN, "Unable to accept client. Out of memory.\n");
                 dprintf(client_socket, "%s%s", internal_error_msg, MSG_BUFFER_END);
                 close(client_socket);
             }
@@ -60,7 +60,7 @@ void connect_clients(int server_socket, int epollfd, client_list_t *list)
 
         clt_ev.data.fd = client_socket;
         if (epoll_ctl(epollfd, EPOLL_CTL_ADD, client_socket, &clt_ev) == -1) {
-            log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to add client to poll list.\n"));
+            log_msg(LOG_WARN, "Unable to add client to poll list.\n");
             dprintf(client_socket, "%s%s", internal_error_msg, MSG_BUFFER_END);
             close(client_socket);
         }
@@ -84,7 +84,7 @@ void disconnect_client(int epollfd, int client_socket, client_list_t *list)
     pthread_mutex_destroy(&list->clients[client_socket].out_mutex);
     close(client_socket);
 
-    log_msg(logger, LOG_INFO, asprintf(&logger->msg, "Client %d disconneted.\n", client_socket));
+    log_msg(LOG_INFO, "Client %d disconneted.\n", client_socket);
 }
 
 void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
@@ -93,6 +93,6 @@ void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
     struct epoll_event clt_ev = {.events = io, .data.fd = client_socket};
 
     if (epoll_ctl(epollfd, EPOLL_CTL_MOD, client_socket, &clt_ev) == -1) {
-        log_msg(logger, LOG_WARN, asprintf(&logger->msg, "Unable to modify poll event.\n"));
+        log_msg(LOG_WARN, "Unable to modify poll event.\n");
     }
 }
