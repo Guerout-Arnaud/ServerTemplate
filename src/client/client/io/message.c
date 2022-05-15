@@ -20,7 +20,6 @@
 #include "common/constant.h"
 #include "client/struct.h"
 
-extern logger_t *logger;
 
 char *receive_msg(int fd)
 {
@@ -49,7 +48,7 @@ char *receive_msg(int fd)
     }
     if (msg != NULL)
         msg[idx - 1] = '\0';
-    printf("MSG = %s\n", msg);
+    printf("MSG = %p\n", msg);
     return (msg);
 }
 
@@ -61,14 +60,15 @@ int buffer_msg(connection_t *client_info)
     if (msg == NULL)
         return (SUCCESS);
 
-
     /* FixMe : Not splitted around \n*/
     log_msg(LOG_DEBUG | LOG_INFO, "Trying to get msg from : %d.\n",client_info->client_socket);
     msg->content = receive_msg(client_info->client_socket);
 
     log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
+    pthread_mutex_lock(&client_info->in_mutex);
     client_info->in = list_add(client_info->in, msg, list);
+    pthread_mutex_unlock(&client_info->in_mutex);
 
     return (msg->content != NULL ? SUCCESS : ERROR);
 }
@@ -87,7 +87,9 @@ int queue_msg(connection_t *client_info, char *message)
 
     log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
+    pthread_mutex_lock(&client_info->out_mutex);
     client_info->out = list_add(client_info->out, msg, list);
+    pthread_mutex_unlock(&client_info->out_mutex);
 
     return (msg->content != NULL ? SUCCESS : ERROR);
 }
@@ -105,7 +107,9 @@ void unbuffer_msg(connection_t *client_info)
     for (message_t *msg = client_info->out; msg != NULL; msg = client_info->out) {
         send_msg(client_info->client_socket, msg->content);
 
+        pthread_mutex_lock(&client_info->out_mutex);
         client_info->out = list_del(client_info->out, msg, list);
+        pthread_mutex_unlock(&client_info->out_mutex);
 
         free(msg->content);
         free(msg);

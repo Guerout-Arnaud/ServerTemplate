@@ -31,7 +31,6 @@
 
 
 extern volatile bool running;
-extern logger_t *logger;
 extern int server_epollfd;
 
 void close_server(server_t *server_info, client_list_t *clients_list)

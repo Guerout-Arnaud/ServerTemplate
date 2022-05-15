@@ -21,8 +21,6 @@
 #include "server/function.h"
 #include "server/constant.h"
 
-extern logger_t *logger;
-
 static const char *ADMIN_COMMANDS[] = {NULL};
 static void (*admin_cmds[])(char *) = {NULL};
 

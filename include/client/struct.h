@@ -21,11 +21,16 @@
         int epoll_fd;
         int pipe[2];
 
+
         int port;
         char *ip_addr;
 
         message_t *in;
         message_t *out;
+
+        pthread_mutex_t in_mutex;
+        pthread_mutex_t out_mutex;
+
 
     } connection_t;
 

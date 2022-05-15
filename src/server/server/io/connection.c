@@ -22,8 +22,6 @@
 #include "server/constant.h"
 #include "server/struct.h"
 
-extern logger_t *logger;
-
 int server_epollfd = -1;
 
 void connect_clients(int server_socket, int epollfd, client_list_t *list)

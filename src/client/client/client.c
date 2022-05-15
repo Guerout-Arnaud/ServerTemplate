@@ -19,9 +19,9 @@
 #include "common/constant.h"
 #include "common/function.h"
 #include "client/struct.h"
+#include "client/function.h"
 
 extern volatile bool running;
-extern logger_t *logger;
 
 #define EPOLL_FDS 4
 
@@ -86,12 +86,12 @@ int client_init(connection_t *client_info)
     }
 
     /* ToDo : Replace by pipe stdin */
-    ev.data.fd = STDIN_FILENO;
-    if (epoll_ctl(client_info->epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &ev) == -1)
-    {
-        client_close(client_info);
-        return (ERROR);
-    }
+    // ev.data.fd = STDIN_FILENO;
+    // if (epoll_ctl(client_info->epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &ev) == -1)
+    // {
+    //     client_close(client_info);
+    //     return (ERROR);
+    // }
 
     ev.data.fd = client_info->pipe[0];
     if (epoll_ctl(client_info->epoll_fd, EPOLL_CTL_ADD, client_info->pipe[0], &ev) == -1)
@@ -121,7 +121,9 @@ int client_loop(connection_t *client_info)
     for (; running;)
     {
 
+        log_msg( LOG_DEBUG | LOG_INFO, "Waiting for events...\n");
         nfds = epoll_wait(client_info->epoll_fd, events, EPOLL_FDS, (int)TIMEOUT);
+        log_msg( LOG_DEBUG | LOG_INFO, "Events received.\n");
 
         if (nfds == -1)
         {
@@ -161,29 +163,12 @@ int client_loop(connection_t *client_info)
                     break;
                 }
             }
-            /* ToDo : THREAD THIS */
-            else if (events[i].data.fd == STDIN_FILENO)
-            {
-                /* ToDo : read fd 0 + queue */
-                char *msg = receive_msg(STDIN_FILENO);
-                if (msg == NULL)
-                    continue;
-                msg[strlen(msg)] = '\n';
-                write(client_info->pipe[1], msg, strlen(msg));
-                free(msg);
-                printf("Message sent\n");
-                // queue_msg(client_info, msg);
-                // mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLOUT);
-            }
             else if (events[i].data.fd == client_info->pipe[0])
             {
 
-                /* ToDo : read fd 0 + queue */
                 char *msg = receive_msg(client_info->pipe[0]);
                 if (msg == NULL)
                     continue;
-                printf("Message received\n");
-                // write(client_info->pipe[1], msg, strlen(msg));
                 queue_msg(client_info, msg);
                 mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLOUT);
             }
@@ -206,14 +191,14 @@ int client_loop(connection_t *client_info)
                         continue;
                     }
 
-                    for (message_t *msg = client_info->in; msg != NULL; msg = client_info->in)
-                    {
-                        log_msg(LOG_INFO, "%s\n", msg->content);
-                        client_info->in = list_del(client_info->out, msg, list);
+                    // for (message_t *msg = client_info->in; msg != NULL; msg = client_info->in)
+                    // {
+                    //     log_msg(LOG_INFO, "%s\n", msg->content);
+                    //     client_info->in = list_del(client_info->out, msg, list);
 
-                        free(msg->content);
-                        free(msg);
-                    }
+                    //     free(msg->content);
+                    //     free(msg);
+                    // }
 
                     // pthread_mutex_lock(&clients_list->clients_mutex);
                     // clients_list->nb_clts_msgs++;
@@ -224,11 +209,6 @@ int client_loop(connection_t *client_info)
                 }
                 if (events[i].events & EPOLLOUT)
                 {
-                    // log_msg(LOG_DEBUG | LOG_INFO, "OUT\n");
-                    // events[i].events = events[i].events & ~EPOLLOUT;
-
-                    // char *buffer_msg = NULL;
-
                     if (client_info->out != NULL)
                     {
                         mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLIN);

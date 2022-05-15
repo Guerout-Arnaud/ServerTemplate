@@ -22,7 +22,6 @@
 #include "server/struct.h"
 #include <game/function.h>
 
-extern logger_t *logger;
 
 extern const char **GAME_COMMANDS;
 extern unsigned int (**game_cmds)(char *, user_t *);
@@ -41,7 +40,7 @@ void *game_loop(void *users_p)
 {
     client_list_t *users = (client_list_t *) users_p;
 
-    log_msg(LOG_INFO, GREEN("[GAME]") "Game started\n");
+    log_msg(LOG_INFO, "[" GREEN(BOLD("GAME")) "] " "Game started\n");
 
     for (;running;) {
 

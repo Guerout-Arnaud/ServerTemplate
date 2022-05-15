@@ -26,7 +26,6 @@
 
 #include "game/function.h"
 
-logger_t *logger = NULL;
 volatile bool running = false;
 
 static server_t server_info = {0};
@@ -63,14 +62,12 @@ int main(int argc, char **argv, char **env)
     pthread_cond_init(&client_list.clients_cond, NULL);
     pthread_mutex_init(&client_list.clients_mutex, NULL);
 
-    logger_init(DEBUG, true, true);
-    // logger = create_logger(true, true, NULL, DEBUG);
-    log_msg(LOG_INFO, "Logger started\n");
-
-    if (logger == NULL) {
+    if (logger_init(DEBUG, true, true) == -1) {
         dprintf(STDOUT_FILENO, ERROR_STR_C "Failed to initalize logger.\n");
         return (ERROR);
     }
+
+    log_msg(LOG_INFO, "Logger started\n");
 
     // ToDo Parse input
 

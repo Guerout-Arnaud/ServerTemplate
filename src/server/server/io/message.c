@@ -21,8 +21,6 @@
 #include "server/constant.h"
 #include "server/struct.h"
 
-extern logger_t *logger;
-
 char *receive_msg(int fd)
 {
     int idx = 0;
@@ -69,9 +67,7 @@ int buffer_msg(client_t *client)
     log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
     pthread_mutex_lock(&client->in_mutex);
-
     client->in = list_add(client->in, msg, list);
-
     pthread_mutex_unlock(&client->in_mutex);
 
     return (msg->content != NULL ? SUCCESS : ERROR);

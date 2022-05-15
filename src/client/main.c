@@ -17,14 +17,11 @@
 #include "client/struct.h"
 #include "client/function.h"
 
-logger_t *logger = NULL;
-
 connection_t client_info = {0};
 bool running = false;
 
 static void usage(void)
 {
-
 }
 
 static void clean_exit(void)
@@ -35,76 +32,66 @@ static void clean_exit(void)
     logger_destroy();
 }
 
-void *ui(void *arg)
-{
-    // connection_t *client_info = (connection_t *)arg;
-
-    // char buff[2] = {0};
-    // while (running) {
-    //     read(STDIN_FILENO, &buff, 2);
-    //     buff[1] = '\0';
-    //     if (buff[0] == 'q') {
-    //         running = false;
-    //         return (NULL);
-    //     }
-    //     dprintf(STDOUT_FILENO, "buff: %s\n", buff);
-    //     write(client_info, buff, 2);
-    // }
-    // return (NULL);
-}
-
-
 int main(int argc, char **argv, char **env)
 {
 
     printf("PID: %d\n", getpid());
-    (void) argc;
-    (void) argv;
-    (void) env;
+    (void)argc;
+    (void)argv;
+    (void)env;
 
     atexit(clean_exit);
 
-    logger_init(DEBUG, true, true);
-    // logger = create_logger(true, false, NULL, DEBUG);
-    log_msg(LOG_INFO, "Logger started\n");
+    pthread_t ui_thread = 0;
 
-    if (logger == NULL) {
+    if (logger_init(DEBUG, true, true) == -1)
+    {
         dprintf(STDOUT_FILENO, ERROR_STR_C "Failed to initalize logger.\n");
         return (ERROR);
     }
+    log_msg(LOG_INFO, "Logger started\n");
 
-    if (argc > 1 && argv[1] != NULL) {
+
+    if (argc > 1 && argv[1] != NULL)
+    {
         client_info.ip_addr = argv[1];
-    } else {
+    }
+    else
+    {
         client_info.ip_addr = "127.0.0.1";
     }
 
-    if (argc > 2 && argv[1] != NULL) {
+    if (argc > 2 && argv[1] != NULL)
+    {
         client_info.port = atoi(argv[2]);
-    } else {
-        client_info.port = 42690;
     }
-
-    if (pipe(client_info.pipe) != 0) {
-        log_msg(LOG_ERROR, "Failed to create pipe.\n");
-        return (ERROR);
+    else
+    {
+        client_info.port = 42690;
     }
 
     log_msg(LOG_INFO, "Connecting to %s:%d\n", client_info.ip_addr, client_info.port);
 
 
-    if (client_init(&client_info) == ERROR) {
+   if (ui_init(&client_info) == ERROR)
+    {
+        log_msg(LOG_ERROR, "Failed to initialize UI\n");
+        return (ERROR);
+    }
+
+    if (client_init(&client_info) == ERROR)
+    {
         log_msg(LOG_ERROR, "Failed to initialize client\n");
         return (ERROR);
     }
 
     running = true;
 
-    // pthread_create(&game_thread, NULL, ui, &client_info);
+    pthread_create(&ui_thread, NULL, ui, &client_info);
 
     client_loop(&client_info);
 
-    // pthread_join(game_thread, NULL);
+    pthread_join(ui_thread, NULL);
 
     return (SUCCESS);
 }

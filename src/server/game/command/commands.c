@@ -23,8 +23,6 @@
 #include "game/function.h"
 #include "game/struct.h"
 
-extern logger_t *logger;
-
 unsigned int connection_cmd(char *command, user_t *player);
 
 

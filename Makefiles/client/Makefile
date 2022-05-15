@@ -38,6 +38,7 @@ MAIN	=	$(SRC_DIR)/main.c
 
 SRC	=	$(SRC_DIR)/client/client.c	\
 		$(SRC_DIR)/client/io/message.c	\
+		$(SRC_DIR)/ui/ui.c	\
 		$(SRC_DIR)/../common/signal/signal.c	\
 
 
