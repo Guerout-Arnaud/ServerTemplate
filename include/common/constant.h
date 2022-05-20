@@ -3,11 +3,11 @@
 ** @file common/constant.h
 ** File description:
 ** @brief Constants (macro and const variables) definition common to the entire project
-** @author 
+** @author
 **  [Arnaud Guerout](https://github.com/Guerout-Arnaud)
 ** Contributors:
-** @authors 
-**  
+** @authors
+**
 */
 
 
@@ -16,7 +16,7 @@
 
     #define EVER ;;
 
-    #ifndef DEBUG 
+    #ifndef DEBUG
         #define DEBUG false
     #endif
 
@@ -27,11 +27,11 @@
     #ifndef PROTOCOL
         #define PROTOCOL "TCP"
     #endif
-    
+
     #ifndef MSG_BUFF_SIZE
         #define MSG_BUFF_SIZE 64
     #endif
-    
+
     #ifndef TIMEOUT
         #define TIMEOUT -1
     #endif
@@ -45,5 +45,7 @@
 
     // static const char MSG_BUFFER_END[] = "\r\n\r\n";
     static const char MSG_BUFFER_END[] = "\n";
+    static const char SERVER_HUP_CODE[] = "500";
+    static const char ACK_MSG[] = "200-ACK";
 
 #endif

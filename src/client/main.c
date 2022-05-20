@@ -51,7 +51,6 @@ int main(int argc, char **argv, char **env)
     }
     log_msg(LOG_INFO, "Logger started\n");
 
-
     if (argc > 1 && argv[1] != NULL)
     {
         client_info.ip_addr = argv[1];
@@ -70,14 +69,13 @@ int main(int argc, char **argv, char **env)
         client_info.port = 42690;
     }
 
-    log_msg(LOG_INFO, "Connecting to %s:%d\n", client_info.ip_addr, client_info.port);
-
-
-   if (ui_init(&client_info) == ERROR)
+    if (ui_init(&client_info) == ERROR)
     {
         log_msg(LOG_ERROR, "Failed to initialize UI\n");
         return (ERROR);
     }
+
+    log_msg(LOG_INFO, "Connecting to %s:%d\n", client_info.ip_addr, client_info.port);
 
     if (client_init(&client_info) == ERROR)
     {
@@ -91,7 +89,9 @@ int main(int argc, char **argv, char **env)
 
     client_loop(&client_info);
 
+    log_msg(LOG_INFO, "Joining UI thread.\n");
     pthread_join(ui_thread, NULL);
+    log_msg(LOG_INFO, "UI thread joined.\n");
 
     return (SUCCESS);
 }

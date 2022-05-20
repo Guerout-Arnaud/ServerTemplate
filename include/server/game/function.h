@@ -3,11 +3,11 @@
 ** @file server/function.h
 ** File description:
 ** @brief Server main functions prototypes
-** @author 
+** @author
 **  [Arnaud Guerout](https://github.com/Guerout-Arnaud)
 ** Contributors:
-** @authors 
-**  
+** @authors
+**
 */
 
 
@@ -21,6 +21,8 @@
     void *game_loop(void *users_p);
 
     int run_cmd(char *command, user_t *player);
+    unsigned int test_cmd(char *command, user_t *player);
+
 
 
 #endif

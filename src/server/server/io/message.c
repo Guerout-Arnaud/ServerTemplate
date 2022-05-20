@@ -48,7 +48,6 @@ char *receive_msg(int fd)
     }
     if (msg != NULL)
         msg[idx - 1] = '\0';
-    // printf("MSG = %s\n", msg);
     return (msg);
 }
 
@@ -76,7 +75,6 @@ int buffer_msg(client_t *client)
 void send_msg(int socket, char *msg)
 {
     /* ToDo Serialize before send */
-    // printf("MSG:\"%s\"\n", msg);
     dprintf(socket, "%s%s", msg, MSG_BUFFER_END);
     return;
 }

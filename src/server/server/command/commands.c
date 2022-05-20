@@ -40,7 +40,6 @@ void admin_cmd_mngt(void)
 
         for (size_t i = 0; ADMIN_COMMANDS[i] != NULL; i++) {
             if (strcmp(command, ADMIN_COMMANDS[i]) == 0) {
-                // printf("%s found !\n", command);
                 admin_cmds[i](command);
                 break;
             }

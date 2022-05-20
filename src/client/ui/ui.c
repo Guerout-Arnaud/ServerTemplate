@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <unistd.h>
 
@@ -33,7 +34,6 @@ void *ui(void *arg)
     connection_t *client_info = (connection_t *)arg;
 
     /* Info : get data and write them on pipe (/!\ wite on pipe[1] not 0, STDIN is a READ ONLY fd) */
-    // close(client_info->pipe[0]);
     log_msg(LOG_INFO, "UI thread started\n");
     log_msg(LOG_INFO, "UI thread dup2 done\n");
 
@@ -41,12 +41,10 @@ void *ui(void *arg)
     {
         if (client_info->in != NULL)
         {
-            // log_msg(LOG_INFO, "Mag found\n");
-            /* lock mutex */
             pthread_mutex_lock(&client_info->in_mutex);
             for (message_t *msg = client_info->in; msg != NULL; msg = client_info->in)
             {
-                log_msg(LOG_INFO,"[" GREEN(BOLD("UI")) "] " "Message : %s\n", msg->content);
+                log_msg(LOG_NONE,"[" GREEN(BOLD("UI")) "] " "Message : %s\n", msg->content);
 
                 client_info->in = list_del(client_info->in, msg, list);
 

@@ -51,7 +51,7 @@ OBJ_TEST	=	$(SRC_TEST:.c=.o)
 
 cflags.common	:=	-W -Wall -Wextra -Wno-unused-variable -Wno-unused-function -D_GNU_SOURCE -I./include/ -I./include/server -I./lib/include/
 cflags.debug	:=	-g3  -save-temps=obj -DDEBUG=true
-cflags.release	:= 
+cflags.release	:=
 cflags.tests	:=
 
 ldflags.common	:=	-L./lib/output -llog -llinked_list -pthread
@@ -74,7 +74,7 @@ BUILD   =   release
 
 ## --------- RULES --------##
 
-all: 
+all:
 	@make -s $(BINNAME) && \
 	$(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
 	$(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
@@ -126,15 +126,15 @@ release	:	 set_rules_release
 		@make -s $(BINNAME) && \
 		$(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
 		$(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
-		
-install	: 
+
+install	:
 		@make -s release && \
 		$(ECHO) $(GREEN) "[OK]"$(TEAL)"  Done : " $@ $(DEFAULT)  || \
 		$(ECHO) $(ERROR) "[ERROR]" $(YELLOW) $(BINNAME) $(DEFAULT)
 		@[ -d $(INSTALL_DIR) ] || \
 		($(ECHO) $(TEAL) "[INFO] $($(INSTALL_DIR)) folder not found. Generating..." $(DEFAULT)  && \
 		$(CREATE_DIR) $(INSTALL_DIR))
-		$(COPY) $(BINNAME).service $(SERVICE_DIR) 
+		$(COPY) $(BINNAME).service $(SERVICE_DIR)
 
 clean:
 	@make -s clean -C ./lib/

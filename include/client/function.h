@@ -41,8 +41,10 @@
 
 
     char *receive_msg(int fd);
-    int buffer_msg(connection_t *client_info);
-    int queue_msg(connection_t *client_info, char *message);
+    message_t *buffer_msg(message_t *msg_list, pthread_mutex_t *mutex, int fd);
+
+    // int buffer_msg(connection_t *client_info);
+    // int queue_msg(connection_t *client_info, char *message);
     void unbuffer_msg(connection_t *client_info);
 
 

@@ -40,6 +40,8 @@ SRC	=	$(SRC_DIR)/client/client.c	\
 		$(SRC_DIR)/client/io/message.c	\
 		$(SRC_DIR)/ui/ui.c	\
 		$(SRC_DIR)/../common/signal/signal.c	\
+		$(SRC_DIR)/../common/utils/strtok_sub.c	\
+		$(SRC_DIR)/../common/utils/msleep.c	\
 
 
 OBJ	=	$(SRC:.c=.o)
@@ -65,7 +67,7 @@ LDFLAGS	:=	${ldflags.${BUILD}} ${ldflags.common}
 
 ## ------- BIN ----------##
 
-BINNAME	= petit_bain_client
+BINNAME	= template_clt
 
 TEST_BIN	=	$(BINNAME)_test
 

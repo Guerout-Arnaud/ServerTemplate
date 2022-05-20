@@ -46,15 +46,15 @@ void *game_loop(void *users_p)
 
         pthread_mutex_lock(&users->clients_mutex);
         if (users->nb_clts_msgs <= 0) {
-            log_msg(LOG_INFO, GREEN("[GAME]") "Waiting for client msg...\n");
+            log_msg(LOG_INFO, "[" GREEN("GAME") "] " "Waiting for client msg...\n");
             pthread_cond_wait(&users->clients_cond, &users->clients_mutex);
-            log_msg(LOG_INFO, GREEN("[GAME]") "New message received\n");
+            log_msg(LOG_INFO, "[" GREEN("GAME") "] " "New message received\n");
         }
         pthread_mutex_unlock(&users->clients_mutex);
 
         for (int i = 0; i < users->max_connected_clt; i++) {
             if (users->clients[i].in != NULL) {
-                log_msg(LOG_INFO, GREEN("[GAME]") "User %d says %s\n", users->clients[i].socket, users->clients[i].in->content);
+                log_msg(LOG_INFO, "[" GREEN("GAME") "] " "User %d says %s\n", users->clients[i].socket, users->clients[i].in->content);
 
                 pthread_mutex_lock(&users->clients_mutex);
                 message_t *in = users->clients[i].in;
@@ -83,7 +83,7 @@ void *game_loop(void *users_p)
                 users->clients[i].out = list_add(users->clients[i].out, out, list);
                 pthread_mutex_unlock(&users->clients_mutex);
 
-                log_msg(LOG_INFO, GREEN("[GAME]") "Message \"%s\" sent to player.\n", out->content);
+                log_msg(LOG_NONE, "[" GREEN("GAME") "] " "Message \"%s\" sent to player.\n", out->content);
             }
         }
     }

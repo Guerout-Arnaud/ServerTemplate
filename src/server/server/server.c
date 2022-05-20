@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <netdb.h>
@@ -37,18 +38,22 @@ void close_server(server_t *server_info, client_list_t *clients_list)
 {
     log_msg(LOG_INFO, "Closing Server.\n");
 
-
-    if (server_info->server_socket != -1)
-        close(server_info->server_socket);
     if (server_info->signal_fd != -1)
         close(server_info->signal_fd);
 
     log_msg(LOG_INFO, "Disconnecting clients.\n");
+
+    int online_clients = 0;
+
     for (int i = 5; i < clients_list->max_connected_clt; i++) {
         if (clients_list->clients[i].socket <= 0)
             continue;
-        dprintf(clients_list->clients[i].socket, "%s%s", internal_error_msg, MSG_BUFFER_END);
-        close(clients_list->clients[i].socket);
+
+        online_clients++;
+
+        dprintf(clients_list->clients[i].socket, "%s-%s%s", SERVER_HUP_CODE, internal_error_msg, MSG_BUFFER_END);
+
+        mod_poll_ev(server_info->epollfd, clients_list->clients[i].socket, EPOLLIN);
 
         for (message_t *next = NULL; clients_list->clients[i].in != NULL; clients_list->clients[i].in = next) {
             next = list_next(clients_list->clients[i].in, list);
@@ -62,12 +67,40 @@ void close_server(server_t *server_info, client_list_t *clients_list)
             free(clients_list->clients[i].out);
         }
     }
+
+    log_msg(LOG_INFO, "Waiting for Acknoledgment.\n");
+
+    struct epoll_event events[MAX_EVENTS] = {0};
+    char buff[MSG_BUFF_SIZE] = {0};
+
+    for (int nfds = 0, wait_limit = 0; online_clients > 0 && wait_limit < 10;) {
+        nfds = epoll_wait(server_info->epollfd, events, MAX_EVENTS, 500);
+        if (nfds == -1) {
+            wait_limit++;
+            log_msg(LOG_INFO, "Current limit: %d\n");
+        }
+        else
+            wait_limit = 0;
+        for (int i = 0; i < nfds; i++) {
+            memset(buff, 0, MSG_BUFF_SIZE);
+            read(events[i].data.fd, buff, MSG_BUFF_SIZE);
+            if (strncmp(buff, ACK_MSG, strlen(ACK_MSG)) != 0)
+                continue;
+            msleep(500);
+            close(events[i].data.fd);
+            clients_list->clients[i].socket = -1;
+            online_clients--;
+        }
+    }
+
     if (clients_list->clients != NULL)
         free(clients_list->clients);
     if (server_info->epollfd != -1)
         close(server_info->epollfd);
     if (server_epollfd != -1)
         close(server_epollfd);
+    if (server_info->server_socket != -1)
+        close(server_info->server_socket);
     log_msg(LOG_INFO, "Server Closed.\n");
 }
 

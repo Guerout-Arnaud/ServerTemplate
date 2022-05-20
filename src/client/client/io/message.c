@@ -18,6 +18,7 @@
 #include "logger/logger.h"
 
 #include "common/constant.h"
+#include "common/function.h"
 #include "client/struct.h"
 
 
@@ -48,56 +49,58 @@ char *receive_msg(int fd)
     }
     if (msg != NULL)
         msg[idx - 1] = '\0';
-    printf("MSG = %p\n", msg);
     return (msg);
 }
 
-int buffer_msg(connection_t *client_info)
+message_t *buffer_msg(message_t *msg_list, pthread_mutex_t *mutex, int fd)
 {
-    message_t *msg = calloc(1, sizeof(*msg));
+    char *raw_msg = receive_msg(fd);
+    message_t *msg = NULL;
 
-    /* Info : Memory error return success cause message has not been retrived yet */
-    if (msg == NULL)
-        return (SUCCESS);
+    if (raw_msg == NULL) {
+        log_msg(LOG_DEBUG | LOG_WARN, "Received empty message.\n");
+        return (msg_list);
+    }
 
-    /* FixMe : Not splitted around \n*/
-    log_msg(LOG_DEBUG | LOG_INFO, "Trying to get msg from : %d.\n",client_info->client_socket);
-    msg->content = receive_msg(client_info->client_socket);
+    for (char *token = strtok_sub(raw_msg, MSG_BUFFER_END); token != NULL; token = strtok_sub(NULL, MSG_BUFFER_END)) {
+        msg = calloc(1, sizeof(*msg));
 
-    log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
+        /* Info : Memory error return success cause message has not been retrived yet */
+        if (msg == NULL) {
+            break;
+        }
 
-    pthread_mutex_lock(&client_info->in_mutex);
-    client_info->in = list_add(client_info->in, msg, list);
-    pthread_mutex_unlock(&client_info->in_mutex);
+        log_msg(LOG_DEBUG | LOG_INFO, "Trying to get msg from : %d.\n", fd);
+        msg->content = strdup(token);
 
-    return (msg->content != NULL ? SUCCESS : ERROR);
-}
+        log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
 
-int queue_msg(connection_t *client_info, char *message)
-{
-    message_t *msg = calloc(1, sizeof(*msg));
+        pthread_mutex_lock(mutex);
+        if (strncmp(msg->content, SERVER_HUP_CODE, strlen(SERVER_HUP_CODE)) == 0) {
+            log_msg(LOG_DEBUG | LOG_INFO, "HUP message adding message to front.\n");
 
-    /* Info : Memory error return success cause message has not been retrived yet */
-    if (msg == NULL)
-        return (SUCCESS);
+            list_init(msg, list);
+            if (msg_list != NULL) {
+                msg->list.next = &msg_list->list;
+                msg->list.prev = msg_list->list.prev;
+                msg_list->list.prev = &msg->list;
+            }
+            msg_list = msg;
+            pthread_mutex_unlock(mutex);
+            break;
+        } else {
+            msg_list = list_add(msg_list, msg, list);
+        }
+        pthread_mutex_unlock(mutex);
+    }
 
-
-    /* FixMe : Not splitted around \n*/
-    msg->content = message;
-
-    log_msg(LOG_DEBUG | LOG_INFO, "New message logged : \"%s\".\n", msg->content);
-
-    pthread_mutex_lock(&client_info->out_mutex);
-    client_info->out = list_add(client_info->out, msg, list);
-    pthread_mutex_unlock(&client_info->out_mutex);
-
-    return (msg->content != NULL ? SUCCESS : ERROR);
+    free(raw_msg);
+    return (msg_list);
 }
 
 void send_msg(int socket, char *msg)
 {
     /* ToDo Serialize before send */
-    printf("MSG:\"%s\"\n", msg);
     dprintf(socket, "%s%s", msg, MSG_BUFFER_END);
     return;
 }

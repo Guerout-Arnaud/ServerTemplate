@@ -26,8 +26,8 @@
 unsigned int connection_cmd(char *command, user_t *player);
 
 
-const char *GAME_COMMANDS[] = {"test", /* "start_simulation", "create_world", */ NULL};
-unsigned int (*game_cmds[])(char *, user_t *) = {connection_cmd, /* start_simulation, create_world */ NULL};
+const char *GAME_COMMANDS[] = {"test", NULL};
+unsigned int (*game_cmds[])(char *, user_t *) = {test_cmd, /* start_simulation, create_world */ NULL};
 
 team_t *teams = NULL;
 
@@ -43,10 +43,8 @@ team_t *get_team(char *teamname)
 int run_cmd(char *command, user_t *player)
 {
     for(int j = 0; GAME_COMMANDS[j] != NULL; j++) {
-        // printf("%d\n", j);
-        // printf("%s\n", GAME_COMMANDS[j]);
         if (strcmp(command, GAME_COMMANDS[j]) == 0) {
-            log_msg(LOG_INFO, GREEN("[GAME]") "User %s used command %s\n", player->username, command);
+            log_msg(LOG_NONE, "[" GREEN(BOLD("GAME")) "] " "User %s used command %s\n", player->username, command);
             return (game_cmds[j](command, player));
             break;
         }
@@ -55,36 +53,11 @@ int run_cmd(char *command, user_t *player)
     return (ERROR);
 }
 
-unsigned int connection_cmd(char *command, user_t *player)
+unsigned int test_cmd(char *command, user_t *player)
 {
+    (void) command;
+    (void) player;
 
-    /* FixMe extract teamname from command */
-    char *teamname = command;
-
-    team_t *team = get_team(teamname);
-
-    if (teams == NULL) {
-        team = malloc(sizeof(*team));
-        list_init(team, list);
-        team->name = strdup(teamname);
-        team->power = 0;
-        team->players = malloc(sizeof(*team->players));
-        team->players[0] = NULL;
-        teams = list_add(teams, team, list);
-    }
-
-    int nb_players = 0;
-    for (nb_players = 0; team->players[nb_players] != NULL; nb_players++);
-
-    user_t **players_tmp = realloc(team->players, sizeof(*players_tmp) * (nb_players + 2));
-    if (players_tmp == NULL) {
-        /* ToDo : Error management */
-        return (0);
-    }
-    team->players =  players_tmp;
-    team->players[nb_players] = player;
-    team->players[nb_players + 1] = NULL;
-
+    log_msg(LOG_NONE, "[" GREEN(BOLD("GAME")) "] " "Command \"test\" success\n");
     return (220);
-    // logger_log(logger, LOG_INFO, "con nection command received");
 }

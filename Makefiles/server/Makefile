@@ -43,7 +43,8 @@ SRC	=	$(SRC_DIR)/server/server.c	\
 		$(SRC_DIR)/game/game.c	\
 		$(SRC_DIR)/game/command/commands.c	\
 		$(SRC_DIR)/../common/signal/signal.c	\
-
+		$(SRC_DIR)/../common/utils/strtok_sub.c	\
+		$(SRC_DIR)/../common/utils/msleep.c	\
 
 OBJ	=	$(SRC:.c=.o)
 
@@ -68,7 +69,7 @@ LDFLAGS	:=	${ldflags.${BUILD}} ${ldflags.common}
 
 ## ------- BIN ----------##
 
-BINNAME	= petit_bain_serveur
+BINNAME	= template_srv
 
 TEST_BIN	=	$(BINNAME)_test
 

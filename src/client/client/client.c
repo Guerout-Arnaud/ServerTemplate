@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <netdb.h>
@@ -9,8 +10,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
-
-#include <string.h>
 
 #include <unistd.h>
 
@@ -27,7 +26,6 @@ extern volatile bool running;
 
 void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
 {
-    // struct epoll_event clt_ev = {.events = io | EPOLLET, .data.fd = client_socket};
     struct epoll_event clt_ev = {.events = io, .data.fd = client_socket};
 
     if (epoll_ctl(epollfd, EPOLL_CTL_MOD, client_socket, &clt_ev) == -1)
@@ -38,6 +36,7 @@ void mod_poll_ev(int epollfd, int client_socket, uint32_t io)
 
 void client_close(connection_t *client_info)
 {
+    running = false;
     if (client_info->client_socket != -1)
         close(client_info->client_socket);
     if (client_info->signal_fd != -1)
@@ -45,7 +44,27 @@ void client_close(connection_t *client_info)
     if (client_info->epoll_fd != -1)
         close(client_info->epoll_fd);
 
-    /* ToDo : Free Messages */
+    pthread_mutex_lock(&client_info->in_mutex);
+    for (message_t *msg = client_info->in; msg != NULL; msg = client_info->in)
+    {
+        client_info->in = list_del(client_info->in, msg, list);
+
+        free(msg->content);
+        free(msg);
+    }
+    pthread_mutex_unlock(&client_info->in_mutex);
+    pthread_mutex_destroy(&client_info->in_mutex);
+
+    pthread_mutex_lock(&client_info->out_mutex);
+    for (message_t *msg = client_info->out; msg != NULL; msg = client_info->out)
+    {
+        client_info->out = list_del(client_info->out, msg, list);
+
+        free(msg->content);
+        free(msg);
+    }
+    pthread_mutex_unlock(&client_info->out_mutex);
+    pthread_mutex_destroy(&client_info->out_mutex);
 }
 
 int client_init(connection_t *client_info)
@@ -85,14 +104,6 @@ int client_init(connection_t *client_info)
         return (ERROR);
     }
 
-    /* ToDo : Replace by pipe stdin */
-    // ev.data.fd = STDIN_FILENO;
-    // if (epoll_ctl(client_info->epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &ev) == -1)
-    // {
-    //     client_close(client_info);
-    //     return (ERROR);
-    // }
-
     ev.data.fd = client_info->pipe[0];
     if (epoll_ctl(client_info->epoll_fd, EPOLL_CTL_ADD, client_info->pipe[0], &ev) == -1)
     {
@@ -118,7 +129,7 @@ int client_loop(connection_t *client_info)
     int nfds = 0;
     struct epoll_event events[EPOLL_FDS] = {0};
 
-    for (; running;)
+    for (; running == true;)
     {
 
         log_msg( LOG_DEBUG | LOG_INFO, "Waiting for events...\n");
@@ -131,7 +142,8 @@ int client_loop(connection_t *client_info)
             sleep(60); /* Hack This prevents for a log spam which could be lead to bigger issues */
             if (wait_err++ > 5)
             {
-                client_close(client_info);
+                // client_close(client_info);
+                log_msg(ERROR, "Too many errors.\n");
                 return (ERROR);
             }
             else
@@ -148,8 +160,6 @@ int client_loop(connection_t *client_info)
 
             if (events[i].data.fd == client_info->signal_fd)
             {
-                printf("Signal received\n");
-
                 struct signalfd_siginfo rcv_signal = {0};
 
                 if (read(client_info->signal_fd, &rcv_signal, sizeof(struct signalfd_siginfo)) != sizeof(struct signalfd_siginfo))
@@ -158,65 +168,54 @@ int client_loop(connection_t *client_info)
                 if (rcv_signal.ssi_signo == SIGINT || rcv_signal.ssi_signo == SIGQUIT)
                 {
                     running = false;
-                    // pthread_cond_signal(&clients_list->clients_cond);
                     log_msg(LOG_INFO, "Client shutdown asked through signal\n");
                     break;
                 }
             }
             else if (events[i].data.fd == client_info->pipe[0])
             {
-
-                char *msg = receive_msg(client_info->pipe[0]);
-                if (msg == NULL)
-                    continue;
-                queue_msg(client_info, msg);
+                client_info->out = buffer_msg(client_info->out, &client_info->out_mutex, client_info->pipe[0]);
                 mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLOUT);
             }
             else
             {
+                log_msg(LOG_DEBUG | LOG_INFO, "Events on fd=%d are %d\n", events[i].data.fd, events[i].events);
                 if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP)
                 {
-                    log_msg(LOG_ERROR, "Server disconnected: %s\n", (events[i].events & EPOLLERR) ? "EPOLLERR" : "EPOLLHUP");
-                    client_close(client_info);
-                    return (ERROR);
+                    running = false;
+                    log_msg(LOG_INFO, "Server disconnected: %s\n", (events[i].events & EPOLLERR) ? "EPOLLERR" : "EPOLLHUP");
+                    dprintf(client_info->client_socket, "%s%s", ACK_MSG, MSG_BUFFER_END);
+                    close(client_info->client_socket);
+                    client_info->client_socket = -1;
+                    break;
                 }
                 if (events[i].events & EPOLLIN)
                 {
-                    // log_msg(LOG_DEBUG | LOG_INFO, "IN\n");
-                    // events[i].events = events[i].events & ~EPOLLIN;
-
-                    if (buffer_msg(client_info) == ERROR)
+                    client_info->in = buffer_msg(client_info->in, &client_info->in_mutex, client_info->client_socket);
+                    if (client_info->in == NULL || strncmp(client_info->in->content, SERVER_HUP_CODE, strlen(SERVER_HUP_CODE)) == 0)
                     {
-                        // disconnect_client(server_info->epollfd, events[i].data.fd, clients_list);
-                        continue;
+                        running = false;
+                        if (client_info->in != NULL) {
+                            log_msg(LOG_INFO, "Server asked for disconnection.\n");
+                            dprintf(client_info->client_socket, "%s%s", ACK_MSG, MSG_BUFFER_END);
+                            close(client_info->client_socket);
+                            client_info->client_socket = -1;
+                            log_msg(LOG_INFO, "Disconnection accepted.\n");
+                        } else {
+                            log_msg(LOG_WARN, "Cannot read from server. Server might have closed the connection.\n");
+                        }
+                        break;
                     }
-
-                    // for (message_t *msg = client_info->in; msg != NULL; msg = client_info->in)
-                    // {
-                    //     log_msg(LOG_INFO, "%s\n", msg->content);
-                    //     client_info->in = list_del(client_info->out, msg, list);
-
-                    //     free(msg->content);
-                    //     free(msg);
-                    // }
-
-                    // pthread_mutex_lock(&clients_list->clients_mutex);
-                    // clients_list->nb_clts_msgs++;
-                    // pthread_mutex_unlock(&clients_list->clients_mutex);
-                    // pthread_cond_signal(&clients_list->clients_cond);
-
-                    // log_msg(LOG_DEBUG | LOG_INFO, "END_IN-------\n");
                 }
                 if (events[i].events & EPOLLOUT)
                 {
-                    if (client_info->out != NULL)
-                    {
-                        mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLIN);
-                        unbuffer_msg(client_info);
-                    }
+                    unbuffer_msg(client_info);
+                    mod_poll_ev(client_info->epoll_fd, client_info->client_socket, EPOLLIN);
                 }
+
             }
         }
     }
+    log_msg(LOG_INFO, "Client loop ended.\n");
     return (SUCCESS);
 }
